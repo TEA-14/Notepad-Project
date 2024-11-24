@@ -7,14 +7,15 @@ import java.io.*;
 class Notepad {
 
     JFrame frame; // main frame
-    JTextArea area; // to write text
+    JTabbedPane tabbedPane; // tabbed pane to manage multiple text areas
     FileOperations example; // file operations
 
     Notepad() {
         frame = new JFrame("Notepad");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        area = new JTextArea();
-        JScrollPane scrollPane = new JScrollPane(area); // will adjust the text area
+
+        tabbedPane = new JTabbedPane();
+        addNewTab(); // Add an initial tab
 
         JLabel statusBar = new JLabel("Status Bar"); // status bar label
 
@@ -23,11 +24,19 @@ class Notepad {
 
         frame.setLayout(new BorderLayout()); // setting the frame to border layout
         frame.setJMenuBar(mb.menuBar); // setting the menu Bar to appear on top of the frame
-        frame.add(scrollPane, BorderLayout.CENTER); // setting the scrollPane in the center
+        frame.add(tabbedPane, BorderLayout.CENTER); // setting the tabbed pane in the center
         frame.add(statusBar, BorderLayout.SOUTH); // setting the status bar at the bottom
         frame.setSize(800, 600); // size of the frame
         frame.setVisible(true);
 
+        // New File action
+        mb.newFile.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                addNewTab();
+            }
+        });
+
+        // Open File action
         mb.openFile.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 int result = example.fileChooser.showOpenDialog(null);
@@ -49,38 +58,56 @@ class Notepad {
             }
         });
 
+        // Copy action
         mb.copy.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                area.copy();
+                getCurrentTextArea().copy();
             }
         });
 
+        // Cut action
         mb.cut.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                area.cut();
+                getCurrentTextArea().cut();
             }
         });
 
+        // Paste action
         mb.paste.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                area.paste();
+                getCurrentTextArea().paste();
             }
         });
 
+        // Select All action
         mb.selectAll.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                area.selectAll();
+                getCurrentTextArea().selectAll();
             }
         });
     }
 
+    private void addNewTab() {
+        JTextArea textArea = new JTextArea();
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        tabbedPane.addTab("Untitled", scrollPane);
+        tabbedPane.setSelectedComponent(scrollPane);
+    }
+
+    private JTextArea getCurrentTextArea() {
+        JScrollPane scrollPane = (JScrollPane) tabbedPane.getSelectedComponent();
+        return (JTextArea) scrollPane.getViewport().getView();
+    }
+
     private void displayFileContent(File file) {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            area.setText("");
+            JTextArea currentTextArea = getCurrentTextArea();
+            currentTextArea.setText("");
             String line;
             while ((line = reader.readLine()) != null) {
-                area.append(line + "\n");
+                currentTextArea.append(line + "\n");
             }
+            tabbedPane.setTitleAt(tabbedPane.getSelectedIndex(), file.getName());
         } catch (IOException e) {
             JOptionPane.showMessageDialog(frame, "File Error!", "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -88,7 +115,9 @@ class Notepad {
 
     private void saveFileContent(File file) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            area.write(writer);
+            JTextArea currentTextArea = getCurrentTextArea();
+            currentTextArea.write(writer);
+            tabbedPane.setTitleAt(tabbedPane.getSelectedIndex(), file.getName());
         } catch (IOException e) {
             JOptionPane.showMessageDialog(frame, "File Save Error!", "Error", JOptionPane.ERROR_MESSAGE);
         }
