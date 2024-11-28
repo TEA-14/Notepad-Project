@@ -12,7 +12,8 @@ class Notepad {
 
     Notepad() {
         frame = new JFrame("Notepad");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
 
         tabbedPane = new JTabbedPane();
         addNewTab(); // Add an initial tab
@@ -36,6 +37,13 @@ class Notepad {
             }
         });
 
+        //new window
+        mb.newWindow.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+            new Notepad();
+            }
+        });
+
         // Open File action
         mb.openFile.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -55,6 +63,23 @@ class Notepad {
                     File selectedFile = example.fileChooser.getSelectedFile();
                     saveFileContent(selectedFile);
                 }
+            }
+        });
+
+        mb.saveAll.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                saveAllTabs();
+            }
+        });
+
+
+        mb.closeTab.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int index = tabbedPane.getSelectedIndex();
+                if(index != -1) {
+                    tabbedPane.removeTabAt(index);
+                }
+
             }
         });
 
@@ -114,6 +139,17 @@ class Notepad {
     }
 
     private void saveFileContent(File file) {
+        if (file.exists()) {
+            int option = JOptionPane.showConfirmDialog(
+                    frame,
+                    "File already exists. Do you want to overwrite it?",
+                    "File Exists",
+                    JOptionPane.YES_NO_OPTION
+            );
+            if (option != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             JTextArea currentTextArea = getCurrentTextArea();
             currentTextArea.write(writer);
@@ -122,5 +158,30 @@ class Notepad {
             JOptionPane.showMessageDialog(frame, "File Save Error!", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
+
+
+    private void saveAllTabs() {
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            tabbedPane.setSelectedIndex(i);
+            int result = example.fileChooser.showSaveDialog(null);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = example.fileChooser.getSelectedFile();
+                if (selectedFile.exists()) {
+                    int option = JOptionPane.showConfirmDialog(
+                            frame,
+                            "File " + selectedFile.getName() + " already exists. Do you want to overwrite it?",
+                            "File Exists",
+                            JOptionPane.YES_NO_OPTION
+                    );
+                    if (option != JOptionPane.YES_OPTION) {
+                        continue;
+                    }
+                }
+                saveFileContent(selectedFile);
+            }
+        }
+    }
+
+
 
 }
