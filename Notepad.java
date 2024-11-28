@@ -110,7 +110,31 @@ class Notepad {
                 getCurrentTextArea().selectAll();
             }
         });
+
+        mb.font.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                changeFont();
+            }
+        });
+
+        mb.color.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showColorChooser();
+            }
+        });
+
+
+        mb.aboutus.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showAboutDialog();
+            }
+        });
+
+
+
     }
+
+
 
     private void addNewTab() {
         JTextArea textArea = new JTextArea();
@@ -180,6 +204,32 @@ class Notepad {
                 saveFileContent(selectedFile);
             }
         }
+    }
+
+
+    private void changeFont() {
+        JTextArea currentTextArea = getCurrentTextArea();
+        Font currentFont = currentTextArea.getFont();
+        FontChooser fontChooser = new FontChooser(currentFont);
+        if (fontChooser.showDialog(frame, "Choose a font")) {
+            currentTextArea.setFont(fontChooser.createFont());
+        }
+    }
+
+    private void showColorChooser() {
+        JTextArea currentTextArea = getCurrentTextArea();
+        Color initialColor = currentTextArea.getForeground();
+        Color selectedColor = JColorChooser.showDialog(frame, "Choose Text Color", initialColor);
+        if (selectedColor != null) {
+            currentTextArea.setForeground(selectedColor);
+        }
+    }
+
+    private void showAboutDialog() {
+        JOptionPane.showMessageDialog(frame,
+                "Notepad developed by Tayyab Ejaz Ahmed",
+                "About Us",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
 
