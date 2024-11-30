@@ -1,5 +1,11 @@
 import javax.swing.*;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
+import javax.swing.text.BadLocationException;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
@@ -9,16 +15,16 @@ class Notepad {
     JFrame frame; // main frame
     JTabbedPane tabbedPane; // tabbed pane to manage multiple text areas
     FileOperations example; // file operations
+    JLabel statusBar; // status bar label
 
     Notepad() {
         frame = new JFrame("Notepad");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-
         tabbedPane = new JTabbedPane();
         addNewTab(); // Add an initial tab
 
-        JLabel statusBar = new JLabel("Status Bar"); // status bar label
+        statusBar = new JLabel("Line: 1, Column: 1"); // status bar label
 
         MenuBar mb = new MenuBar(); // associating the MenuBar class
         example = new FileOperations(); // associating File Operations class
@@ -30,6 +36,13 @@ class Notepad {
         frame.setSize(800, 600); // size of the frame
         frame.setVisible(true);
 
+        tabbedPane.addChangeListener(e -> {
+            JTextArea currentTextArea = getCurrentTextArea();
+            if (currentTextArea != null) {
+                updateStatusBar(currentTextArea);
+            }
+        });
+
         // New File action
         mb.newFile.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -37,10 +50,10 @@ class Notepad {
             }
         });
 
-        //new window
+        // New Window action
         mb.newWindow.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-            new Notepad();
+                new Notepad();
             }
         });
 
@@ -66,20 +79,20 @@ class Notepad {
             }
         });
 
+        // Save All action
         mb.saveAll.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 saveAllTabs();
             }
         });
 
-
+        // Close Tab action
         mb.closeTab.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 int index = tabbedPane.getSelectedIndex();
-                if(index != -1) {
+                if (index != -1) {
                     tabbedPane.removeTabAt(index);
                 }
-
             }
         });
 
@@ -111,44 +124,49 @@ class Notepad {
             }
         });
 
+        // Change Font action
         mb.font.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 changeFont();
             }
         });
 
+        // Change Color action
         mb.color.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showColorChooser();
             }
         });
 
-
+        // About Us action
         mb.aboutus.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showAboutDialog();
             }
         });
-
-
-
     }
-
-
 
     private void addNewTab() {
         JTextArea textArea = new JTextArea();
+        textArea.setTransferHandler(new FileDropHandler()); // Set the transfer handler for drag-and-drop
         JScrollPane scrollPane = new JScrollPane(textArea);
         tabbedPane.addTab("Untitled", scrollPane);
         tabbedPane.setSelectedComponent(scrollPane);
+
+        textArea.addCaretListener(new CaretListener() {
+            public void caretUpdate(CaretEvent e) {
+                updateStatusBar(textArea);
+            }
+        });
     }
+
 
     private JTextArea getCurrentTextArea() {
         JScrollPane scrollPane = (JScrollPane) tabbedPane.getSelectedComponent();
         return (JTextArea) scrollPane.getViewport().getView();
     }
 
-    private void displayFileContent(File file) {
+    public void displayFileContent(File file) {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             JTextArea currentTextArea = getCurrentTextArea();
             currentTextArea.setText("");
@@ -157,6 +175,7 @@ class Notepad {
                 currentTextArea.append(line + "\n");
             }
             tabbedPane.setTitleAt(tabbedPane.getSelectedIndex(), file.getName());
+            updateStatusBar(currentTextArea); // Update status bar
         } catch (IOException e) {
             JOptionPane.showMessageDialog(frame, "File Error!", "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -183,7 +202,6 @@ class Notepad {
         }
     }
 
-
     private void saveAllTabs() {
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             tabbedPane.setSelectedIndex(i);
@@ -205,7 +223,6 @@ class Notepad {
             }
         }
     }
-
 
     private void changeFont() {
         JTextArea currentTextArea = getCurrentTextArea();
@@ -230,6 +247,50 @@ class Notepad {
                 "Notepad developed by Tayyab Ejaz Ahmed",
                 "About Us",
                 JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void updateStatusBar(JTextArea textArea) {
+        int caretPosition = textArea.getCaretPosition();
+        int lineNumber = 0;
+        int columnNumber = 0;
+        try {
+            lineNumber = textArea.getLineOfOffset(caretPosition) + 1;
+            columnNumber = caretPosition - textArea.getLineStartOffset(lineNumber - 1) + 1;
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }
+        statusBar.setText("Line: " + lineNumber + ", Column: " + columnNumber);
+    }
+
+
+    class FileDropHandler extends TransferHandler {
+        @Override
+        public boolean canImport(TransferSupport support) {
+            // We only support file drops
+            if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean importData(TransferSupport support) {
+            if (!canImport(support)) {
+                return false;
+            }
+
+            // Get the file list that is being dropped
+            Transferable t = support.getTransferable();
+            try {
+                java.util.List<File> files = (java.util.List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
+                for (File file : files) {
+                    displayFileContent(file);
+                }
+            } catch (UnsupportedFlavorException | IOException e) {
+                return false;
+            }
+            return true;
+        }
     }
 
 
