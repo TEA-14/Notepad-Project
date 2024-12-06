@@ -1,23 +1,26 @@
 import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
-import javax.swing.event.*;
 
 public class FontChooser extends JPanel {
     private Font selectedFont;
-    private JList<String> fontList, styleList, sizeList;
+    private JList<String> fontList;
+    private JList<String> styleList;
+    private JList<String> sizeList;
     private JDialog dialog;
-    private JButton okButton;
     private boolean ok;
 
     public FontChooser(Font initialFont) {
         selectedFont = initialFont;
+        initializeComponents(initialFont);
+        layoutComponents();
+    }
 
+    private void initializeComponents(Font initialFont) {
         String[] fontNames = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
         fontList = new JList<>(fontNames);
         fontList.setSelectedValue(initialFont.getFamily(), true);
 
-        String[] fontStyles = { "Plain", "Italic", "Bold", "Bold Italic" };
+        String[] fontStyles = {"Plain", "Italic", "Bold", "Bold Italic"};
         styleList = new JList<>(fontStyles);
         styleList.setSelectedIndex(initialFont.getStyle());
 
@@ -27,7 +30,9 @@ public class FontChooser extends JPanel {
         }
         sizeList = new JList<>(fontSizes);
         sizeList.setSelectedValue(String.valueOf(initialFont.getSize()), true);
+    }
 
+    private void layoutComponents() {
         setLayout(new BorderLayout());
 
         JPanel listsPanel = new JPanel(new GridLayout(1, 3));
@@ -35,7 +40,7 @@ public class FontChooser extends JPanel {
         listsPanel.add(new JScrollPane(styleList));
         listsPanel.add(new JScrollPane(sizeList));
 
-        okButton = new JButton("OK");
+        JButton okButton = new JButton("OK");
         okButton.addActionListener(e -> {
             ok = true;
             selectedFont = createFont();
@@ -67,6 +72,8 @@ public class FontChooser extends JPanel {
             dialog = new JDialog(SwingUtilities.getWindowAncestor(parent), title, Dialog.ModalityType.APPLICATION_MODAL);
             dialog.getContentPane().add(this);
             dialog.pack();
+            dialog.setResizable(false);
+            dialog.setLocationRelativeTo(parent);
         }
 
         dialog.setVisible(true);
